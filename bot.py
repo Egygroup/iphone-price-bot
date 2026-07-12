@@ -16,27 +16,16 @@ def get_price():
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8'
         }
         page = requests.get(URL, headers=headers, timeout=20)
         soup = BeautifulSoup(page.content, 'html.parser')
 
-        # أمازون بيحط السعر في أماكن ثابتة
         price_whole = soup.find('span', {'class': 'a-price-whole'})
         if price_whole:
-            price_text = price_whole.get_text().replace(',', '').strip()
-            return float(price_text)
-
-        # خطة بديلة
-        price_offscreen = soup.find('span', {'class': 'a-offscreen'})
-        if price_offscreen:
-            text = price_offscreen.get_text()
-            numbers = re.findall(r'[\d,]+', text.replace(',', ''))
-            if numbers:
-                return float(numbers[0])
+            return float(price_whole.get_text().replace(',', '').strip())
+        
         return None
-
     except Exception as e:
         print(f'Error: {e}')
         return None
@@ -45,11 +34,11 @@ async def main():
     current_price = get_price()
     if current_price:
         if current_price <= TARGET_PRICE:
-            message = f'🚨🚨 الحق يا معلم السعر نزل! \n iPhone 15 128GB Black دلوقتي بـ {current_price:,.0f} جنيه \n {URL}'
+            message = f'🚨🚨 الحق السعر نزل! \n iPhone 15 128GB Black بـ {current_price:,.0f} جنيه \n {URL}'
             await bot.send_message(chat_id=CHAT_ID, text=message)
         else:
-            await bot.send_message(chat_id=CHAT_ID, text=f'✅ تم التشغيل - السعر الحالي على أمازون: {current_price:,.0f} جنيه')
+            await bot.send_message(chat_id=CHAT_ID, text=f'✅ السعر الحالي على أمازون: {current_price:,.0f} جنيه')
     else:
-        await bot.send_message(chat_id=CHAT_ID, text='⚠️ مقدرتش أجيب السعر من أمازون')
+        await bot.send_message(chat_id=CHAT_ID, text='⚠️ مقدرتش أجيب السعر')
 
 asyncio.run(main())
