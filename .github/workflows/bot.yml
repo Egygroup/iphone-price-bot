@@ -11,9 +11,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: |
-          pip install python-telegram-bot playwright
-          playwright install chromium --with-deps
+      - run: pip install requests beautifulsoup4 python-telegram-bot
       - run: python bot.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
