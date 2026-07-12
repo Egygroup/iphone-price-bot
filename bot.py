@@ -1,36 +1,45 @@
-import os, re, asyncio, telegram
-from playwright.async_api import async_playwright
+import os, re, asyncio, urllib.parse, requests, telegram
 
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
 CHAT_ID = os.environ.get('CHAT_ID')
-URL = 'https://dream2000.com/en/apple-iphone-15-6gb-ram-128gb-black.html'
+# هنحاول Dream2000 الأول وبعده RayaShop
+URLS = [
+    "https://dream2000.com/en/apple-iphone-15-6gb-ram-128gb-black.html",
+    "https://www.rayashop.com"
+]
 
 bot = telegram.Bot(token=TOKEN)
 
-async def get_price():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page(user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-        await page.goto(URL, wait_until='networkidle', timeout=60000)
-        await page.wait_for_timeout(5000)
-
-        text = await page.locator('body').inner_text()
-        print(text[:1000]) # هيظهر في اللوج
-
-        # دور على EGPxx,xxx
-        m = re.search(r'EGP\s*([\d,]+\.?\d*)', text)
+def get_price_from(url):
+    try:
+        # بروكسي مجاني بيجيب الصفحة من سيرفر تاني مش محظور
+        proxy = "https://api.allorigins.win/raw?url=" + urllib.parse.quote_plus(url)
+        r = requests.get(proxy, timeout=30, headers={'User-Agent':'Mozilla/5.0'})
+        print(f"Trying {url} -> {r.status_code} len={len(r.text)}")
+        # دور على اول سعر شبه EGP 49,999 او EGP45,555
+        m = re.search(r'EGP\s*([\d,]+\.?\d*)', r.text)
         if m:
-            await browser.close()
             return float(m.group(1).replace(',', ''))
-
-        await browser.close()
+        m2 = re.search(r'([\d,]{2,})\.?\d*\s*EGP', r.text)
+        if m2:
+            return float(m2.group(1).replace(',', ''))
+        return None
+    except Exception as e:
+        print(f"Error {url}: {e}")
         return None
 
 async def main():
-    price = await get_price()
+    price = None
+    used_url = ""
+    for u in URLS:
+        price = get_price_from(u)
+        if price:
+            used_url = u
+            break
+
     if price:
-        await bot.send_message(chat_id=CHAT_ID, text=f'✅ اشتغل! Dream2000: {price:,.0f} جنيه\n{URL}')
+        await bot.send_message(chat_id=CHAT_ID, text=f'✅ اشتغل أخيراً! السعر: {price:,.0f} جنيه\nمن: {used_url}')
     else:
-        await bot.send_message(chat_id=CHAT_ID, text='⚠️ لسه مش لاقي السعر')
+        await bot.send_message(chat_id=CHAT_ID, text='⚠️ لسه البروكسي مش راجع، افتح Logs في Actions وشوف سطر len=')
 
 asyncio.run(main())
