@@ -1,20 +1,22 @@
-name: Check Price
+name: Check iPhone Price
 on:
   schedule:
     - cron: '0 * * * *'
   workflow_dispatch:
 jobs:
-  check:
+  check-price:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: |
+      - name: Install browser
+        run: |
           pip install python-telegram-bot playwright
           playwright install chromium --with-deps
-      - run: python bot.py
+      - name: Run bot
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python bot.py
